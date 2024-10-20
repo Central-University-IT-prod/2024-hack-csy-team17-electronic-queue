@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Создание очереди</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Background Props (shapes) */
+        .shape {
+            position: absolute;
+            background-color: lightgray;
+            opacity: 0.3;
+            animation: float 10s ease-in-out infinite;
+        }
+
+        /* Circles */
+        .shape.circle {
+            border-radius: 50%;
+        }
+
+        /* Squares */
+        .shape.square {
+            border-radius: 10px;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0); }
+        }
+
+        /* Main Container */
+        .container {
+            text-align: center;
+            z-index: 1; /* Ensures content is above background shapes */
+        }
+
+        label {
+            font-size: 20px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            max-width: 300px;
+            padding: 10px;
+            font-size: 18px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        #okButton, .button {
+            background-color: yellow;
+            border: none;
+            padding: 15px 30px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            opacity: 0.5; /* Initially disabled */
+            cursor: not-allowed; /* Initially disabled */
+        }
+
+        #okButton.enabled, .button:hover {
+            opacity: 1; /* Enable button on valid input */
+            cursor: pointer;
+            background-color: orange;
+        }
+
+        /* Notification Styles */
+        .notification {
+            display: none;
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: white;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 2; /* Above background shapes */
+            text-align: center;
+        }
+
+        .button-container {
+            margin-top: 10px;
+        }
+
+        .navButton {
+            background-color: yellow;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 16px;
+        }
+
+        .navButton:hover {
+            background-color: orange;
+        }
+
+        /* Settings */
+        #settings {
+            display: none;
+            margin-top: 20px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+        }
+
+        .setting {
+            margin-bottom: 15px;
+        }
+
+        /* Стиль для кубиков */
+        .cube {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 255, 0, 0.7);
+            animation: float 6s infinite;
+            opacity: 0.6;
+        }
+
+    </style>
+</head>
+<body>
+<!-- Background Shapes -->
+<div class="shape circle shape-1"></div>
+<div class="shape square shape-2"></div>
+<div class="shape circle shape-3"></div>
+<div class="shape square shape-4"></div>
+<div class="shape circle shape-5"></div>
+<div class="shape square shape-6"></div>
+
+<!-- Main Content -->
+<div class="container" id="mainContainer">
+    <h1>Создание очереди</h1>
+    <label for="queueName">Введите название очереди</label>
+    <input type="text" id="queueName" placeholder="Название очереди" name="queueName">
+
+    <div class="setting">
+        <label for="maxSimultaneous">Максимальное количество одновременно занимающих стенд:</label>
+        <input type="number" id="maxSimultaneous" placeholder="Введите значение">
+    </div>
+
+    <div class="setting">
+        <label for="avgTime">Среднее время прохождения (в минутах):</label>
+        <input type="number" id="avgTime" placeholder="Введите значение">
+    </div>
+
+    <button id="okButton" disabled>Создать очередь</button>
+</div>
+
+<div class="notification" id="notification">
+    <p>Очередь успешно создана!</p>
+    <div class="button-container">
+        <button class="navButton" id="adminButton">Панель администратора</button>
+        <button class="navButton" id="newQueueButton">Создать еще одну очередь</button>
+    </div>
+</div>
+
+<div id="cubes"></div>
+
+<script>
+        // Enable the "Создать очередь" button only when all fields are filled
+        function checkFields() {
+            const queueName = document.getElementById('queueName').value;
+            const maxSimultaneous = document.getElementById('maxSimultaneous').value;
+            const avgTime = document.getElementById('avgTime').value;
+            const okButton = document.getElementById('okButton');
+
+            if (queueName && maxSimultaneous && avgTime) {
+                okButton.disabled = false;
+                okButton.classList.add('enabled');
+            } else {
+                okButton.disabled = true;
+                okButton.classList.remove('enabled');
+            }
+        }
+
+        // Event listeners for inputs to check fields
+        document.getElementById('queueName').addEventListener('input', checkFields);
+        document.getElementById('maxSimultaneous').addEventListener('input', checkFields);
+        document.getElementById('avgTime').addEventListener('input', checkFields);
+
+        // When the OK button is pressed, create the queue and show the notification
+        document.getElementById('okButton').addEventListener('click', function() {
+            let queueName = document.getElementById('queueName').value;
+            let maxSimultaneous = parseInt(document.getElementById('maxSimultaneous').value); // Convert to integer
+            let avgTime = parseInt(document.getElementById('avgTime').value); // Convert to integer
+
+            fetch(`http://89.169.157.126:8000/queue-point/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: queueName, max_simultaneous: maxSimultaneous, avg_time: avgTime })
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('Очередь успешно создана!');
+                    document.getElementById('notification').style.display = 'block';
+                    document.getElementById('mainContainer').style.display = 'none';
+
+                } else {
+                    console.error('Ошибка при отправке данных!');
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка при отправке данных:', error);
+            });
+        });
+
+        // Redirect to Admin panel
+        document.getElementById('adminButton').addEventListener('click', function() {
+            window.location.href = "/admin"; // Укажите правильный URL вашей панели администратора
+        });
+
+        // Show the input form again to create a new queue
+        document.getElementById('newQueueButton').addEventListener('click', function() {
+            document.getElementById('notification').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'block';
+            document.getElementById('queueName').value = ''; // Очистка поля ввода
+            document.getElementById('maxSimultaneous').value = ''; // Очистка поля ввода
+            document.getElementById('avgTime').value = ''; // Очистка поля ввода
+            document.getElementById('okButton').disabled = true; // Disable button again
+            document.getElementById('okButton').classList.remove('enabled');
+        });
+
+        // Создание кубиков на заднем фоне
+        function createCubes() {
+            const cubeCount = 10; // Количество кубиковg
+            const cubesContainer = document.getElementById('cubes');
+
+            for (let i = 0; i < cubeCount; i++) {
+                const cube = document.createElement('div');
+                cube.className = 'cube';
+                cube.style.left = `${Math.random() * 100}vw`;
+                cube.style.top = `${Math.random() * 100}vh`;
+                cube.style.animationDuration = `${2 + Math.random() * 6}s`; // Разное время анимации
+                cubesContainer.appendChild(cube);
+            }
+        }
+
+        createCubes();
+</script>
+</body>
+</html>

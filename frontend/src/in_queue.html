@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Очередь</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            text-align: center;
+            position: relative;
+        }
+        #queuePosition {
+            font-size: 20px;
+            margin-top: 10px;
+        }
+
+        /* Стиль для кубиков */
+        .cube {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 255, 0, 0.7);
+            animation: float 6s infinite;
+            opacity: 0.6;
+        }
+
+    </style>
+</head>
+<body>
+<div class="container">
+    <div id="queuePosition">Ваше место в очереди: <span id="Position">7</span></div>
+    <div id="estimatedTime">Ориентировочное время: 00:00</div>
+</div>
+
+
+<div id="cubes"></div>
+
+<script>
+        let estimatedTimeElement = document.getElementById('estimatedTime');
+
+        // Initialize values from localStorage
+        if (localStorage.getItem('person_in_queue_id')) {
+            let person_in_queue_id = parseInt(localStorage.getItem('person_in_queue_id'), 10);
+
+            fetch(`http://89.169.157.126:8000/queue/${person_in_queue_id}/current-position`, {
+               method: 'GET',
+               headers: {
+                   'Content-Type': 'application/json'
+               }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json()
+                } else {
+                    console.error('Ошибка при отправке данных!');
+                }
+            })
+            .then(data => {
+              const queuePosition = document.getElementById('queuePosition');
+              queuePosition.textContent  = `Ваше место в очереди: ${data.position_in_queue}`;
+              estimatedTimeElement.textContent  = `Ориентировочное время: ${data.estimated_time} минут`;
+              console.log(data);  // Use the JSON data here
+            })
+            .catch(error => {
+                console.error('Ошибка при отправке данных:', error);
+            });
+
+        } else {
+            const url = new URL(window.location.href);
+            let person_in_queue_id = url.searchParams.get('person_in_queue_id');
+            if (!person_in_queue_id) {
+                window.location.href = "/";
+            }
+        }
+
+        // Создание кубиков на заднем фоне
+        function createCubes() {
+            const cubeCount = 10; // Количество кубиковg
+            const cubesContainer = document.getElementById('cubes');
+
+            for (let i = 0; i < cubeCount; i++) {
+                const cube = document.createElement('div');
+                cube.className = 'cube';
+                cube.style.left = `${Math.random() * 100}vw`;
+                cube.style.top = `${Math.random() * 100}vh`;
+                cube.style.animationDuration = `${2 + Math.random() * 6}s`; // Разное время анимации
+                cubesContainer.appendChild(cube);
+            }
+        }
+
+        createCubes();
+</script>
+</body>
+</html>
