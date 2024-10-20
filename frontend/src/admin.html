@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Меню Администратора</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            z-index: 1;
+        }
+
+        .queue-container {
+            margin-bottom: 20px;
+            z-index: 1;
+        }
+
+        label {
+            font-size: 20px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        select {
+            padding: 10px;
+            font-size: 18px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .button {
+            background-color: yellow;
+            border: none;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin: 5px 0; /* Отступы между кнопками */
+        }
+
+        .button:hover {
+            background-color: orange;
+        }
+
+        #settings {
+            display: none;
+            margin-top: 20px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+        }
+
+        .setting {
+            margin-bottom: 15px;
+        }
+
+        .setting label {
+            font-size: 16px;
+        }
+
+        .setting input {
+            padding: 8px;
+            font-size: 16px;
+            width: 100%;
+            max-width: 200px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        /* Стиль для кубиков */
+        .cube {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 255, 0, 0.7);
+            animation: float 6s infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0); }
+        }
+
+        /* Контейнер для кнопок */
+        .button-container {
+            display: flex;
+            flex-direction: column; /* Вертикальное расположение */
+            align-items: flex-start; /* Выравнивание по левому краю */
+        }
+    </style>
+</head>
+<body>
+<h1>Меню Администратора</h1>
+
+<div class="queue-container">
+    <label for="queueSelect">Выберите очередь:</label>
+    <select id="queueSelect">
+        <option value="">--Выберите очередь--</option>
+    </select>
+    <button class="button" id="selectQueueButton">Выбрать очередь</button>
+</div>
+
+<div id="settings">
+    <div class="qr_code" style="float: left">
+        <h2>QR-Код</h2>
+        <img src="" hidden id="imgQrCode">
+    </div>
+    <div class="settings_queue" style="float: right">
+        <h2>Настройки очереди</h2>
+        <div class="setting">
+            <label for="queueCount">Количество людей в очереди:</label>
+            <input type="number" id="queueCount" readonly>
+        </div>
+        <div class="setting">
+            <label for="maxSimultaneous">Максимальное количество одновременно занимающих стенд:</label>
+            <input type="number" id="maxSimultaneous" placeholder="Введите значение">
+        </div>
+        <div class="setting">
+            <label for="avgTime">Среднее время прохождения (в минутах):</label>
+            <input type="number" id="avgTime" placeholder="Введите значение">
+        </div>
+
+        <!-- Контейнер для кнопок -->
+        <div class="button-container">
+            <button class="button" id="saveSettingsButton">Сохранить настройки</button>
+            <button class="button" id="deleteFirstButton">Удалить первого в очереди</button>
+            <button class="button" id="skipFirstButton">Пропустить первого в очереди</button>
+        </div>
+    </div>
+</div>
+
+<div id="cubes"></div>
+
+<script>
+        const queueSelect = document.getElementById('queueSelect');
+        const settingsDiv = document.getElementById('settings');
+        const queueCountDisplay = document.getElementById('queueCount');
+        const maxSimultaneousDisplay = document.getElementById('maxSimultaneous');
+        const avgTimeDisplay = document.getElementById('avgTime');
+
+        // Создание кубиков на заднем фоне
+        function createCubes() {
+            const cubeCount = 10; // Количество кубиковg
+            const cubesContainer = document.getElementById('cubes');
+
+            for (let i = 0; i < cubeCount; i++) {
+                const cube = document.createElement('div');
+                cube.className = 'cube';
+                cube.style.left = `${Math.random() * 100}vw`;
+                cube.style.top = `${Math.random() * 100}vh`;
+                cube.style.animationDuration = `${2 + Math.random() * 6}s`; // Разное время анимации
+                cubesContainer.appendChild(cube);
+            }
+        }
+
+        createCubes();
+
+        // Получить очереди
+        fetch('http://{{sensitive data}}:8000/queues')
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(queue => {
+                    const option = document.createElement('option');
+                    option.value = queue.id;
+                    option.textContent = queue.name;
+                    queueSelect.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Ошибка при получении очередей:', error));
+
+        // Выбор очереди
+        document.getElementById('selectQueueButton').addEventListener('click', function() {
+            const selectedQueueId = queueSelect.value;
+            if (selectedQueueId) {
+                settingsDiv.style.display = 'block'; // Показываем настройки
+                updateQueueCount(selectedQueueId);
+
+                const imgQrCode = document.getElementById('imgQrCode');
+
+                fetch(`http://{{sensitive data}}:8000/queue/${selectedQueueId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        imgQrCode.src = data.qr_code_url;
+                        imgQrCode.removeAttribute("hidden");
+                        console.log(data.count_persons);
+                        queueCountDisplay.value = data.count_persons;
+                        maxSimultaneousDisplay.value = data.max_simultaneous;
+                        avgTimeDisplay.value = data.avg_time
+                    })
+                    .catch(error => console.error('Ошибка при получении очередей:', error));
+
+            } else {
+                alert('Пожалуйста, выберите очередь');
+            }
+        });
+
+        // Обновление количества людей в очереди
+        function updateQueueCount(queueId) {
+            fetch(`http://{{sensitive data}}:8000/queue/${queueId}/count`) // Предполагается, что у вас есть этот маршрут на бэкенде
+                .then(response => response.json())
+                .then(data => {
+                    queueCountDisplay.value = data.count; // Обновляем отображение количества
+                })
+                .catch(error => console.error('Ошибка при получении количества людей в очереди:', error));
+        }
+
+        // Сохранение настроек
+        document.getElementById('saveSettingsButton').addEventListener('click', function() {
+            const selectedQueueId = queueSelect.value;
+            const maxSimultaneous = document.getElementById('maxSimultaneous').value;
+            const avgTime = document.getElementById('avgTime').value;
+
+            fetch(`http://{{sensitive data}}:8000/queue/${selectedQueueId}/settings`, { // Предполагается, что у вас есть этот маршрут на бэкенде
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ max_simultaneous: maxSimultaneous, avg_time: avgTime })
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Настройки сохранены успешно!');
+                } else {
+                    alert('Ошибка при сохранении настроек');
+                }
+            })
+            .catch(error => console.error('Ошибка при сохранении настроек:', error));
+        });
+
+        // Удаление первого в очереди
+        document.getElementById('deleteFirstButton').addEventListener('click', function() {
+            const selectedQueueId = queueSelect.value;
+
+            fetch(`http://{{sensitive data}}:8000/queue/${selectedQueueId}/delete-first`, { // Предполагается, что у вас есть этот маршрут на бэкенде
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Первый в очереди удалён!');
+                    updateQueueCount(selectedQueueId); // Обновляем количество после удаления
+                } else {
+                    alert('Ошибка при удалении первого в очереди');
+                }
+            })
+            .catch(error => console.error('Ошибка при удалении первого в очереди:', error));
+        });
+
+        // Пропуск первого в очереди
+        document.getElementById('skipFirstButton').addEventListener('click', function() {
+            const selectedQueueId = queueSelect.value;
+
+            fetch(`http://{{sensitive data}}:8000/queue/${selectedQueueId}/skip-first`, { // Предполагается, что у вас есть этот маршрут на бэкенде
+                method: 'PUT'
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Первый в очереди пропущен!');
+                    updateQueueCount(selectedQueueId); // Обновляем количество после пропуска
+                } else {
+                    alert('Ошибка при пропуске первого в очереди');
+                }
+            })
+            .catch(error => console.error('Ошибка при пропуске первого в очереди:', error));
+        });
+
+</script>
+</body>
+</html>

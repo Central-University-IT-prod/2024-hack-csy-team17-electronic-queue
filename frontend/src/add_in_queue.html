@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Очередь</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            text-align: center;
+            position: relative;
+        }
+        .back-arrow {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        #queueButton, #leaveButton {
+            background-color: yellow;
+            border: none;
+            padding: 15px 30px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: opacity 0.5s ease;
+        }
+        #leaveButton {
+            display: none;
+            background-color: grey;
+        }
+        .hidden {
+            opacity: 0;
+        }
+        #timer {
+            font-size: 30px;
+            margin-bottom: 10px;
+        }
+        #queueCount {
+            font-size: 20px;
+        }
+        input[type="text"] {
+            width: 200px; /* Ширина поля ввода */
+            padding: 10px; /* Отступы внутри поля */
+            font-size: 16px; /* Размер шрифта */
+            border: 1px solid #ccc; /* Рамка */
+            border-radius: 5px; /* Закругленные углы */
+            margin-bottom: 20px; /* Отступ снизу */
+            transition: border-color 0.3s; /* Плавный переход цвета рамки */
+        }
+        input[type="text"]:focus {
+            border-color: yellow; /* Цвет рамки при фокусе */
+            outline: none; /* Убираем обводку */
+        }
+
+        /* Стиль для кубиков */
+        .cube {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 255, 0, 0.7);
+            animation: float 6s infinite;
+            opacity: 0.6;
+        }
+
+    </style>
+</head>
+<body>
+<div class="container">
+    <label>Telegram:</label><br/>
+    <input type="text" name="tg_nickname" placeholder="Введите ваш никнейм">
+
+    <!-- Timer -->
+    <br/>
+    <!-- Queue Button -->
+    <button id="queueButton">Встать в очередь</button>
+</div>
+
+<div id="cubes"></div>
+
+<script>
+        let queueButton = document.getElementById('queueButton');
+        let leaveButton = document.getElementById('leaveButton');
+        let timerElement = document.getElementById('timer');
+        let count = 0;
+        let startTime;
+
+        queueButton.addEventListener('click', () => {
+            const url = new URL(window.location.href);
+
+            // Получаем параметры из URL
+            const queue_point_id = url.searchParams.get('queue_point_id');
+            const tg_nickname = document.querySelector('input[name="tg_nickname"]').value;
+
+            // Отправляем данные на бэкенд
+            fetch(`http://{{sensitive data}}:8000/queue/${queue_point_id}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: tg_nickname })
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json()
+                } else {
+                    console.error("Ошибка отправки данных")
+                }
+            })
+            .then(data => {
+                localStorage.setItem('person_in_queue_id', data.id);
+                window.location.href = `/position-in-queue?person_in_queue_id=${data.id}`;
+            })
+            .catch(error => {
+                console.error('Ошибка при отправке данных:', error);
+            });
+        });
+
+
+        // Создание кубиков на заднем фоне
+        function createCubes() {
+            const cubeCount = 10; // Количество кубиковg
+            const cubesContainer = document.getElementById('cubes');
+
+            for (let i = 0; i < cubeCount; i++) {
+                const cube = document.createElement('div');
+                cube.className = 'cube';
+                cube.style.left = `${Math.random() * 100}vw`;
+                cube.style.top = `${Math.random() * 100}vh`;
+                cube.style.animationDuration = `${2 + Math.random() * 6}s`; // Разное время анимации
+                cubesContainer.appendChild(cube);
+            }
+        }
+
+        createCubes();
+</script>
+</body>
+</html>
